@@ -94,7 +94,7 @@ function storagePathHistoryWithLegacyDefault(saved: Partial<AppConfig>, currentP
   const candidates = [...(saved.storagePathHistory || [])]
   if (
     saved.storagePath &&
-    !saved.storagePathHistory &&
+    (!saved.storagePathHistory || saved.storagePathHistory.length === 0) &&
     normalizeStoragePath(saved.storagePath) !== normalizeStoragePath(DEFAULT_STORAGE_PATH)
   ) {
     candidates.push(DEFAULT_STORAGE_PATH)

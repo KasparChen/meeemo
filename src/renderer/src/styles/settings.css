@@ -165,6 +165,17 @@ html[data-window="settings"] #root {
   border: 1px solid var(--settings-divider);
 }
 
+.settings-location-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-location-line .settings-storage-path {
+  flex: 1;
+  min-width: 0;
+}
+
 .settings-action-row {
   display: flex;
   align-items: center;

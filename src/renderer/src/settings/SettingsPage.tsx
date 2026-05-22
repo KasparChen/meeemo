@@ -312,19 +312,21 @@ export function SettingsPage() {
               <div className="settings-action-copy">
                 <div className="settings-action-title">Current location</div>
                 <div className="settings-action-desc">Meeemo stores memos, todos, and image assets in this folder.</div>
-                <div className="settings-storage-path" title={storagePath}>{storagePath}</div>
-              </div>
-              <div className="settings-action-buttons">
-                <button className="settings-button" onClick={() => api.openStorage()}>Open</button>
-                <button
-                  className="settings-button"
-                  onClick={async () => {
-                    const newPath = await api.changeStorage()
-                    if (newPath) await refreshStorageConfig()
-                  }}
-                >
-                  Change...
-                </button>
+                <div className="settings-location-line">
+                  <div className="settings-storage-path" title={storagePath}>{storagePath}</div>
+                  <div className="settings-action-buttons">
+                    <button className="settings-button" onClick={() => api.openStorage()}>Open</button>
+                    <button
+                      className="settings-button"
+                      onClick={async () => {
+                        const newPath = await api.changeStorage()
+                        if (newPath) await refreshStorageConfig()
+                      }}
+                    >
+                      Change...
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 

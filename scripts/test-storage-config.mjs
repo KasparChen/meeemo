@@ -61,6 +61,12 @@ try {
   assert.equal(config.loadConfig().storagePath, legacyCustomStorage)
   assert.deepEqual(config.loadConfig().storagePathHistory, [defaultStorage])
 
+  writeFileSync(
+    join(userData, 'config.json'),
+    JSON.stringify({ ...config.loadConfig(), storagePath: legacyCustomStorage, storagePathHistory: [] }, null, 2)
+  )
+  assert.deepEqual(config.loadConfig().storagePathHistory, [defaultStorage])
+
   const one = join(tmp, 'one')
   const two = join(tmp, 'two')
   const three = join(tmp, 'three')
