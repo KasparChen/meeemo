@@ -162,14 +162,16 @@ export function createEditorWindow(filename?: string): BrowserWindow {
   editorWindow.on('close', () => {
     if (editorWindow && !editorWindow.isDestroyed()) {
       const bounds = editorWindow.getBounds()
+      // Only persist bounds; let updateConfig deep-merge keep opacity/colors/etc.
+      // Bug fix: previously spread `config.lastWindowState` (closure snapshot from window open),
+      // which overwrote any panelColor/fontColor/opacity changes made during the session.
       updateConfig({
         lastWindowState: {
-          ...config.lastWindowState,
           x: bounds.x,
           y: bounds.y,
           width: bounds.width,
           height: bounds.height
-        }
+        } as any
       })
     }
   })
