@@ -26,7 +26,8 @@ function SortableTodoItem({
   reminder,
   onToggle,
   onDelete,
-  onSetReminder
+  onSetReminder,
+  onRename
 }: {
   id: string
   text: string
@@ -35,6 +36,7 @@ function SortableTodoItem({
   onToggle: () => void
   onDelete: () => void
   onSetReminder: (reminder: string | undefined) => void
+  onRename: (text: string) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
 
@@ -52,6 +54,7 @@ function SortableTodoItem({
         onToggle={onToggle}
         onDelete={onDelete}
         onSetReminder={onSetReminder}
+        onRename={onRename}
         dragHandleProps={listeners}
       />
     </div>
@@ -192,6 +195,16 @@ export function TodoPopover() {
     const realIndex = allTasks.findIndex((t) => t.text === task.text && t.done === task.done)
     if (realIndex >= 0) {
       allTasks[realIndex] = { ...allTasks[realIndex], reminder }
+      saveTasks(allTasks)
+    }
+  }
+
+  const handleRename = (index: number, newText: string) => {
+    const allTasks = [...tasks]
+    const task = displayTasks[index]
+    const realIndex = allTasks.findIndex((t) => t.text === task.text && t.done === task.done)
+    if (realIndex >= 0) {
+      allTasks[realIndex] = { ...allTasks[realIndex], text: newText }
       saveTasks(allTasks)
     }
   }
@@ -391,6 +404,7 @@ export function TodoPopover() {
                 onToggle={() => handleToggle(i)}
                 onDelete={() => handleDelete(i)}
                 onSetReminder={(r) => handleSetReminder(i, r)}
+                onRename={(t) => handleRename(i, t)}
               />
             ))}
           </SortableContext>
