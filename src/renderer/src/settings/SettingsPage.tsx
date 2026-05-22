@@ -36,6 +36,12 @@ export function SettingsPage() {
   const [reminderLeadTime, setReminderLeadTime] = useState(10)
   const [notificationType, setNotificationType] = useState<NotificationType>('tray')
   const [storagePath, setStoragePath] = useState('')
+  const [storagePathHistory, setStoragePathHistory] = useState<string[]>([])
+  const [showMigration, setShowMigration] = useState(false)
+  const [migrationSource, setMigrationSource] = useState('')
+  const [keepMigrationSource, setKeepMigrationSource] = useState(true)
+  const [confirmDeleteSource, setConfirmDeleteSource] = useState(false)
+  const [migrationStatus, setMigrationStatus] = useState('')
 
   // Appearance
   const [theme, setTheme] = useState<ThemeSetting>('system')
@@ -78,6 +84,7 @@ export function SettingsPage() {
       setReminderLeadTime(cfg.reminderLeadTime ?? 10)
       setNotificationType(cfg.notificationType || 'tray')
       setStoragePath(cfg.storagePath || '')
+      setStoragePathHistory(cfg.storagePathHistory || [])
       const ih = cfg.imageHost || ({} as any)
       setImageHostEnabled(ih.enabled || false)
       setImageHostType(ih.type || 'smms')
@@ -149,6 +156,25 @@ export function SettingsPage() {
 
   const updateImageHost = (partial: Record<string, unknown>) =>
     api.configSet({ imageHost: partial } as any)
+
+  const refreshStorageConfig = async () => {
+    const cfg = await api.configGet()
+    setStoragePath(cfg.storagePath || '')
+    setStoragePathHistory(cfg.storagePathHistory || [])
+  }
+
+  const runMigration = async () => {
+    if (!migrationSource) return
+    setMigrationStatus('Migrating...')
+    try {
+      const result = await api.migrateStorage(migrationSource, keepMigrationSource)
+      setMigrationStatus(`Copied ${result.copied} item${result.copied === 1 ? '' : 's'}${result.renamed ? `, renamed ${result.renamed}` : ''}.`)
+      setConfirmDeleteSource(false)
+      await refreshStorageConfig()
+    } catch (error) {
+      setMigrationStatus(error instanceof Error ? error.message : 'Migration failed')
+    }
+  }
 
   const checkForUpdates = async () => {
     setUpdateStatus('checking')
@@ -289,7 +315,7 @@ export function SettingsPage() {
                 className="settings-button"
                 onClick={async () => {
                   const newPath = await api.changeStorage()
-                  if (newPath) setStoragePath(newPath)
+                  if (newPath) await refreshStorageConfig()
                 }}
               >
                 Change Location...
@@ -297,11 +323,24 @@ export function SettingsPage() {
               <button
                 className="settings-button"
                 onClick={async () => {
-                  const defaultPath = await api.resetStorage()
-                  setStoragePath(defaultPath)
+                  await api.resetStorage()
+                  await refreshStorageConfig()
                 }}
               >
                 Reset Default
+              </button>
+              <button
+                className="settings-button"
+                disabled={storagePathHistory.length === 0}
+                onClick={() => {
+                  setMigrationSource(storagePathHistory[0] || '')
+                  setMigrationStatus('')
+                  setKeepMigrationSource(true)
+                  setConfirmDeleteSource(false)
+                  setShowMigration(true)
+                }}
+              >
+                Migrate From...
               </button>
             </div>
           </>
@@ -543,6 +582,69 @@ export function SettingsPage() {
           </>
         )}
       </div>
+
+      {showMigration && (
+        <div className="settings-modal-backdrop">
+          <div className="settings-modal">
+            <div className="settings-modal-title">Migrate Storage</div>
+            <div className="settings-modal-copy">Copy files from a previous storage location into the current one.</div>
+            <div className="settings-storage-path" title={storagePath}>Current: {storagePath}</div>
+            <div className="settings-path-list">
+              {storagePathHistory.map((path) => (
+                <button
+                  key={path}
+                  className={`settings-path-item ${migrationSource === path ? 'settings-path-item-active' : ''}`}
+                  onClick={() => setMigrationSource(path)}
+                  title={path}
+                >
+                  {path}
+                </button>
+              ))}
+            </div>
+            <label className="settings-checkbox-row">
+              <input
+                type="checkbox"
+                checked={keepMigrationSource}
+                onChange={(e) => {
+                  setKeepMigrationSource(e.target.checked)
+                  setConfirmDeleteSource(false)
+                }}
+              />
+              <span>Keep source contents</span>
+            </label>
+            {migrationStatus && <div className="settings-modal-copy">{migrationStatus}</div>}
+            <div className="settings-modal-actions">
+              <button className="settings-button" onClick={() => setShowMigration(false)}>Close</button>
+              <button
+                className="settings-button settings-button-primary"
+                disabled={!migrationSource}
+                onClick={() => {
+                  if (keepMigrationSource) runMigration()
+                  else setConfirmDeleteSource(true)
+                }}
+              >
+                Migrate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDeleteSource && (
+        <div className="settings-modal-backdrop">
+          <div className="settings-modal settings-modal-danger">
+            <div className="settings-modal-title">Confirm Source Deletion</div>
+            <div className="settings-modal-copy">
+              This operation is irreversible. Meeemo will copy the source contents first, then delete all files in the original storage folder if the copy succeeds. Confirm only after checking that this is the folder you want to remove.
+            </div>
+            <div className="settings-storage-path" title={migrationSource}>{migrationSource}</div>
+            <div className="settings-modal-actions">
+              <button className="settings-button" onClick={() => setConfirmDeleteSource(false)}>Cancel</button>
+              <button className="settings-button settings-button-danger" onClick={runMigration}>Delete Source After Migrating</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

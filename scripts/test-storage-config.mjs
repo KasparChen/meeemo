@@ -38,9 +38,11 @@ try {
   assert.equal(typeof config.resetStoragePath, 'function')
 
   assert.equal(config.loadConfig().storagePath, defaultStorage)
+  assert.deepEqual(config.loadConfig().storagePathHistory, [])
 
   config.updateConfig({ storagePath: customStorage })
   assert.equal(config.loadConfig().storagePath, customStorage)
+  assert.deepEqual(config.loadConfig().storagePathHistory, [defaultStorage])
 
   const storedConfig = JSON.parse(readFileSync(join(userData, 'config.json'), 'utf-8'))
   assert.equal(storedConfig.storagePath, customStorage)
@@ -49,6 +51,18 @@ try {
   const reset = config.resetStoragePath()
   assert.equal(reset.storagePath, defaultStorage)
   assert.equal(config.loadConfig().storagePath, defaultStorage)
+  assert.deepEqual(config.loadConfig().storagePathHistory, [customStorage])
+
+  const one = join(tmp, 'one')
+  const two = join(tmp, 'two')
+  const three = join(tmp, 'three')
+  const four = join(tmp, 'four')
+  const five = join(tmp, 'five')
+  const six = join(tmp, 'six')
+  for (const path of [one, two, three, four, five, six]) {
+    config.updateConfig({ storagePath: path })
+  }
+  assert.deepEqual(config.loadConfig().storagePathHistory, [five, four, three, two, one])
 } finally {
   rmSync(tmp, { recursive: true, force: true })
 }

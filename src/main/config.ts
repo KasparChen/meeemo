@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync } from 'fs'
-import { join } from 'path'
+import { join, resolve } from 'path'
 import { homedir } from 'os'
 import { app } from 'electron'
 
@@ -19,6 +19,7 @@ export interface WindowState {
 
 export interface AppConfig {
   storagePath: string
+  storagePathHistory: string[]
   pinnedMemos: string[]
   globalShortcut: string
   shortcutTarget: 'command' | 'notes' | 'task'
@@ -37,6 +38,7 @@ export interface AppConfig {
 
 const DEFAULT_CONFIG: AppConfig = {
   storagePath: DEFAULT_STORAGE_PATH,
+  storagePathHistory: [],
   pinnedMemos: [],
   globalShortcut: 'Alt+Space',
   shortcutTarget: 'command',
@@ -65,6 +67,27 @@ const DEFAULT_CONFIG: AppConfig = {
 
 function configFilePath(): string {
   return join(app.getPath('userData'), 'config.json')
+}
+
+function normalizeStoragePath(path: string): string {
+  return resolve(path)
+}
+
+function normalizeStoragePathHistory(paths: string[], currentPath: string): string[] {
+  const current = normalizeStoragePath(currentPath)
+  const seen = new Set<string>()
+  const result: string[] = []
+
+  for (const path of paths) {
+    if (!path) continue
+    const normalized = normalizeStoragePath(path)
+    if (normalized === current || seen.has(normalized)) continue
+    seen.add(normalized)
+    result.push(normalized)
+    if (result.length >= 5) break
+  }
+
+  return result
 }
 
 export function ensureStorageDirs(storagePath: string): void {
@@ -112,6 +135,7 @@ export function loadConfig(): AppConfig {
   const raw = readFileSync(cfgFile, 'utf-8')
   const saved = JSON.parse(raw) as Partial<AppConfig>
   const config = { ...DEFAULT_CONFIG, ...saved }
+  config.storagePathHistory = normalizeStoragePathHistory(saved.storagePathHistory || [], config.storagePath)
   config.lastWindowState = { ...DEFAULT_CONFIG.lastWindowState, ...(saved.lastWindowState || {}) }
   config.imageHost = { ...DEFAULT_CONFIG.imageHost, ...(saved.imageHost || {}) }
   ensureStorageDirs(config.storagePath)
@@ -127,6 +151,14 @@ export function saveConfig(config: AppConfig): void {
 export function updateConfig(partial: Partial<AppConfig>): AppConfig {
   const config = loadConfig()
   const updated = { ...config, ...partial }
+  if (partial.storagePath && normalizeStoragePath(partial.storagePath) !== normalizeStoragePath(config.storagePath)) {
+    updated.storagePathHistory = normalizeStoragePathHistory(
+      [config.storagePath, ...(partial.storagePathHistory || config.storagePathHistory)],
+      partial.storagePath
+    )
+  } else if (partial.storagePathHistory) {
+    updated.storagePathHistory = normalizeStoragePathHistory(partial.storagePathHistory, updated.storagePath)
+  }
   // Deep-merge lastWindowState to avoid losing fields when only updating one property
   if (partial.lastWindowState) {
     updated.lastWindowState = { ...config.lastWindowState, ...partial.lastWindowState }

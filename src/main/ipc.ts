@@ -5,6 +5,7 @@ import { listTodoLists, readTodoList, writeTodoList, createTodoList, deleteTodoL
 import { loadConfig, resetStoragePath, updateConfig, type AppConfig } from './config'
 import { saveImage } from './image-service'
 import { updateTrayBadge } from './tray'
+import { migrateStorage } from './storage-migration-service'
 
 // Broadcast to all windows EXCEPT the sender (ColaMD-style isInternalSave pattern)
 function broadcastToOthers(senderContents: Electron.WebContents | null, channel: string, ...args: unknown[]): void {
@@ -179,6 +180,12 @@ export function registerIpcHandlers(): void {
     const updated = resetStoragePath()
     broadcastToAll('config-changed')
     return updated.storagePath
+  })
+  ipcMain.handle('app:migrate-storage', (_e, sourcePath: string, keepSource: boolean) => {
+    const config = loadConfig()
+    const result = migrateStorage(sourcePath, config.storagePath, { keepSource })
+    broadcastToAll('data-changed')
+    return result
   })
   ipcMain.handle('window:close', (e) => { BrowserWindow.fromWebContents(e.sender)?.close() })
 }

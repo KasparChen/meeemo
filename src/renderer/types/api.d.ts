@@ -3,6 +3,7 @@ interface MemoMeta { filename: string; title: string; modifiedAt: number; previe
 interface TodoList { filename: string; name: string; tasks: TodoTask[] }
 interface AppConfig {
   storagePath: string
+  storagePathHistory: string[]
   pinnedMemos: string[]
   globalShortcut: string
   theme: 'light' | 'dark' | 'system'
@@ -48,6 +49,7 @@ interface MeeemoAPI {
   openStorage(): Promise<void>
   changeStorage(): Promise<string | null>
   resetStorage(): Promise<string>
+  migrateStorage(sourcePath: string, keepSource: boolean): Promise<{ copied: number; renamed: number; removedSource: boolean }>
   openSettings(section?: string): Promise<void>
   windowClose(): Promise<void>
   onOpenMemo(callback: (filename: string) => void): (() => void) | void
