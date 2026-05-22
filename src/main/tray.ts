@@ -1,4 +1,4 @@
-import { Tray, nativeImage } from 'electron'
+import { app, Tray, nativeImage } from 'electron'
 import { createTodoWindow } from './windows'
 import { listTodoLists } from './todo-service'
 import { parseReminderToDate } from './reminder-scheduler'
@@ -17,6 +17,8 @@ export function createTray(): Tray {
   updateTrayBadge()
 
   tray.on('click', (_event, bounds) => {
+    // Bring app to foreground so menu bar switches to Meeemo's menu (File / Settings / ...)
+    app.focus({ steal: true })
     createTodoWindow(bounds)
   })
 

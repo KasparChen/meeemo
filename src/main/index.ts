@@ -6,6 +6,7 @@ import { createMemo } from './memo-service'
 import { togglePalette, createEditorWindow, hidePalette, createTodoWindow, openMemoDirectly } from './windows'
 import { createTray, updateTrayBadge, getTray } from './tray'
 import { startReminderScheduler } from './reminder-scheduler'
+import { createApplicationMenu } from './menu'
 
 app.whenReady().then(() => {
   const config = loadConfig()
@@ -18,6 +19,7 @@ app.whenReady().then(() => {
   })
 
   registerIpcHandlers()
+  createApplicationMenu()
   createTray()
   startReminderScheduler()
 

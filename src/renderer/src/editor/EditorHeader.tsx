@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { SettingsPopover } from './SettingsPopover'
-import { SystemPopover } from './SystemPopover'
 import { MenuPopover } from './MenuPopover'
+import { useApi } from '../hooks/use-ipc'
 
 interface EditorHeaderProps {
   visible: boolean
@@ -17,25 +16,16 @@ interface EditorHeaderProps {
 }
 
 export function EditorHeader({ visible, filename, mode, onToggleMode, onSwitchMemo, onSwitchTodo, onRename, onClose, onPopoverChange, onMouseLeave }: EditorHeaderProps) {
-  const [showSettings, setShowSettings] = useState(false)
-  const [showSystem, setShowSystem] = useState(false)
+  const api = useApi()
   const [showMenu, setShowMenu] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
 
   const title = filename ? filename.replace('.md', '') : 'Untitled'
 
-  const anyPopoverOpen = showSettings || showSystem || showMenu
-
   useEffect(() => {
-    onPopoverChange?.(anyPopoverOpen)
-  }, [anyPopoverOpen, onPopoverChange])
-
-  const closeAllPopovers = () => {
-    setShowSettings(false)
-    setShowSystem(false)
-    setShowMenu(false)
-  }
+    onPopoverChange?.(showMenu)
+  }, [showMenu, onPopoverChange])
 
   const startRename = () => {
     setTitleDraft(title)
@@ -57,24 +47,13 @@ export function EditorHeader({ visible, filename, mode, onToggleMode, onSwitchMe
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       onMouseLeave={onMouseLeave}
     >
-      {/* Left: close button + system + mode toggle */}
+      {/* Left: close + mode toggle */}
       <div className="flex items-center gap-2 px-3 z-10" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <button
           onClick={onClose}
           className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-400 transition-colors"
           title="Close"
         />
-        <button
-          onClick={() => { setShowSystem(!showSystem); setShowSettings(false); setShowMenu(false) }}
-          className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-          title="System"
-          style={{ padding: '2px' }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="4 17 10 11 4 5" />
-            <line x1="12" y1="19" x2="20" y2="19" />
-          </svg>
-        </button>
         <button
           onClick={onToggleMode}
           className="text-xs bg-black/5 px-2 py-1 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
@@ -110,19 +89,17 @@ export function EditorHeader({ visible, filename, mode, onToggleMode, onSwitchMe
       <div className="flex-1" />
       <div className="flex items-center gap-1 px-3 z-10" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <button
-          onClick={() => { setShowSettings(!showSettings); setShowSystem(false); setShowMenu(false) }}
+          onClick={() => api.openSettings()}
           className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-1 transition-colors"
           title="Settings"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="4" y1="7" x2="20" y2="7" />
-            <line x1="4" y1="17" x2="20" y2="17" />
-            <circle cx="8" cy="7" r="2.5" fill="var(--panel-bg)" />
-            <circle cx="16" cy="17" r="2.5" fill="var(--panel-bg)" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
         </button>
         <button
-          onClick={() => { setShowMenu(!showMenu); setShowSettings(false); setShowSystem(false) }}
+          onClick={() => setShowMenu(!showMenu)}
           className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-lg px-1 transition-colors"
           title="Menu"
         >
@@ -131,16 +108,13 @@ export function EditorHeader({ visible, filename, mode, onToggleMode, onSwitchMe
       </div>
 
       {/* Popover backdrop — click outside to close */}
-      {anyPopoverOpen && (
+      {showMenu && (
         <div
           className="fixed inset-0 z-40"
-          onClick={closeAllPopovers}
+          onClick={() => setShowMenu(false)}
         />
       )}
 
-      {/* Popovers */}
-      {showSettings && <SettingsPopover onClose={() => setShowSettings(false)} />}
-      {showSystem && <SystemPopover onClose={() => setShowSystem(false)} />}
       {showMenu && (
         <MenuPopover
           currentFilename={filename}

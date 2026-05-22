@@ -5,7 +5,7 @@ interface AppConfig {
   storagePath: string
   pinnedMemos: string[]
   globalShortcut: string
-  theme: 'light' | 'dark'
+  theme: 'light' | 'dark' | 'system'
   lastWindowState: {
     x: number; y: number; width: number; height: number
     opacity: number; blur: number; panelColor: string; fontColor: string
@@ -47,11 +47,15 @@ interface MeeemoAPI {
   openUrl(url: string): Promise<void>
   openStorage(): Promise<void>
   changeStorage(): Promise<string | null>
+  openSettings(section?: string): Promise<void>
   windowClose(): Promise<void>
   onOpenMemo(callback: (filename: string) => void): (() => void) | void
   onShowTodo(callback: () => void): (() => void) | void
   onDataChanged(callback: () => void): (() => void) | void
   onReminderAlert(callback: () => void): (() => void) | void
+  onReminderData(callback: (data: { title: string; body: string }[]) => void): (() => void) | void
+  onConfigChanged(callback: () => void): (() => void) | void
+  onSettingsNavigate(callback: (section: string) => void): (() => void) | void
 }
 declare global { interface Window { api: MeeemoAPI } }
 export {}

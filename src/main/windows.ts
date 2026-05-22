@@ -18,6 +18,7 @@ let paletteWindow: BrowserWindow | null = null
 let editorWindow: BrowserWindow | null = null
 let todoWindow: BrowserWindow | null = null
 let reminderWindow: BrowserWindow | null = null
+let settingsWindow: BrowserWindow | null = null
 
 function preloadPath(): string {
   return join(__dirname, '../preload/index.js')
@@ -340,8 +341,52 @@ export function createReminderWindow(
   })
 }
 
+export type SettingsSection = 'general' | 'appearance' | 'image-host' | 'updates'
+
+export function createSettingsWindow(section: SettingsSection = 'general'): BrowserWindow {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.show()
+    settingsWindow.focus()
+    settingsWindow.webContents.send('settings-navigate', section)
+    return settingsWindow
+  }
+
+  const cursor = screen.getCursorScreenPoint()
+  const display = screen.getDisplayNearestPoint(cursor)
+  const w = 720
+  const h = 560
+
+  settingsWindow = new BrowserWindow({
+    width: w,
+    height: h,
+    x: Math.round(display.workArea.x + (display.workArea.width - w) / 2),
+    y: Math.round(display.workArea.y + (display.workArea.height - h) / 2),
+    show: false,
+    title: 'Meeemo Settings',
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    webPreferences: {
+      preload: preloadPath(),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  })
+
+  loadPage(settingsWindow, 'settings')
+
+  settingsWindow.once('ready-to-show', () => {
+    settingsWindow?.show()
+    settingsWindow?.webContents.send('settings-navigate', section)
+  })
+  settingsWindow.on('closed', () => { settingsWindow = null })
+
+  return settingsWindow
+}
+
 export function hidePalette(): void {
   if (paletteWindow && !paletteWindow.isDestroyed()) paletteWindow.hide()
 }
 
-export { paletteWindow, editorWindow, todoWindow }
+export { paletteWindow, editorWindow, todoWindow, settingsWindow }

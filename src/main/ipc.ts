@@ -105,7 +105,11 @@ export function registerIpcHandlers(): void {
     return saveImage(buffer, ext)
   })
   ipcMain.handle('config:get', () => loadConfig())
-  ipcMain.handle('config:set', (_e, partial: Partial<AppConfig>) => updateConfig(partial))
+  ipcMain.handle('config:set', (_e, partial: Partial<AppConfig>) => {
+    const updated = updateConfig(partial)
+    broadcastToAll('config-changed')
+    return updated
+  })
   ipcMain.handle('window:set-opacity', (e, opacity: number) => {
     BrowserWindow.fromWebContents(e.sender)?.setOpacity(opacity)
   })
@@ -153,6 +157,10 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('app:open-storage', () => {
     const config = loadConfig()
     shell.openPath(config.storagePath)
+  })
+  ipcMain.handle('app:open-settings', (_e, section?: string) => {
+    const { createSettingsWindow } = require('./windows')
+    createSettingsWindow(section || 'general')
   })
   ipcMain.handle('app:change-storage', async () => {
     const { dialog } = require('electron')

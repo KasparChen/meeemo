@@ -28,7 +28,7 @@ export interface AppConfig {
     apiKey: string
     uploadUrl: string // only used for 'custom' type
   }
-  theme: 'light' | 'dark'
+  theme: 'light' | 'dark' | 'system'
   lastWindowState: WindowState
 }
 
@@ -46,7 +46,7 @@ const DEFAULT_CONFIG: AppConfig = {
     apiKey: '',
     uploadUrl: ''
   },
-  theme: 'light',
+  theme: 'system',
   lastWindowState: {
     x: -1,
     y: -1,

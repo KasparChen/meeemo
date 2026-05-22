@@ -35,6 +35,7 @@ const api = {
   openUrl: (url: string) => ipcRenderer.invoke('app:open-url', url),
   openStorage: () => ipcRenderer.invoke('app:open-storage'),
   changeStorage: () => ipcRenderer.invoke('app:change-storage'),
+  openSettings: (section?: string) => ipcRenderer.invoke('app:open-settings', section),
   windowClose: () => ipcRenderer.invoke('window:close'),
   onOpenMemo: (callback: (filename: string) => void) => {
     const handler = (_e: any, filename: string) => callback(filename)
@@ -60,6 +61,16 @@ const api = {
     const handler = (_e: any, data: any) => callback(data)
     ipcRenderer.on('reminder-data', handler)
     return () => { ipcRenderer.removeListener('reminder-data', handler) }
+  },
+  onConfigChanged: (callback: () => void) => {
+    const handler = () => callback()
+    ipcRenderer.on('config-changed', handler)
+    return () => { ipcRenderer.removeListener('config-changed', handler) }
+  },
+  onSettingsNavigate: (callback: (section: string) => void) => {
+    const handler = (_e: any, section: string) => callback(section)
+    ipcRenderer.on('settings-navigate', handler)
+    return () => { ipcRenderer.removeListener('settings-navigate', handler) }
   }
 }
 

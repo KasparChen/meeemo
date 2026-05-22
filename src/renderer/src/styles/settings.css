@@ -1,0 +1,219 @@
+/* Settings window — opaque, sidebar nav layout */
+html[data-window="settings"],
+html[data-window="settings"] body,
+html[data-window="settings"] #root {
+  background: var(--settings-bg);
+  user-select: none;
+  overflow: hidden;
+  height: 100%;
+}
+
+:root {
+  --settings-bg: #f5f5f7;
+  --settings-sidebar-bg: #ececef;
+  --settings-card: #ffffff;
+  --settings-divider: rgba(0, 0, 0, 0.08);
+  --settings-nav-hover: rgba(0, 0, 0, 0.06);
+  --settings-nav-active: rgba(0, 122, 255, 0.12);
+}
+
+[data-theme="dark"] {
+  --settings-bg: #1c1c1e;
+  --settings-sidebar-bg: #232325;
+  --settings-card: #2c2c2e;
+  --settings-divider: rgba(255, 255, 255, 0.08);
+  --settings-nav-hover: rgba(255, 255, 255, 0.06);
+  --settings-nav-active: rgba(91, 141, 239, 0.18);
+}
+
+.settings-shell {
+  display: flex;
+  height: 100vh;
+}
+
+.settings-sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  background: var(--settings-sidebar-bg);
+  border-right: 1px solid var(--settings-divider);
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-sidebar-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  padding: 0 10px 8px 10px;
+}
+
+.settings-nav-item {
+  text-align: left;
+  font-size: 13px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  cursor: pointer;
+  outline: none;
+}
+.settings-nav-item:hover {
+  background: var(--settings-nav-hover);
+}
+.settings-nav-item-active,
+.settings-nav-item-active:hover {
+  background: var(--settings-nav-active);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.settings-content {
+  flex: 1;
+  padding: 24px 28px;
+  overflow-y: auto;
+}
+
+.settings-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin: 6px 0 10px 0;
+}
+.settings-section-title:not(:first-child) {
+  margin-top: 24px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+}
+.settings-row + .settings-row {
+  border-top: 1px solid var(--settings-divider);
+}
+
+.settings-row-label {
+  font-size: 13px;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.settings-row-control {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-input,
+.settings-select,
+.settings-button {
+  font-size: 13px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--settings-divider);
+  background: var(--settings-card);
+  color: var(--text-primary);
+  outline: none;
+  min-width: 0;
+}
+
+.settings-select {
+  cursor: pointer;
+}
+
+.settings-button {
+  cursor: pointer;
+}
+.settings-button:hover {
+  background: var(--settings-nav-hover);
+}
+
+.settings-button-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+.settings-button-primary:hover {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+
+.settings-storage-path {
+  font-family: -apple-system-monospaced, ui-monospaced, monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  word-break: break-all;
+  background: var(--settings-card);
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--settings-divider);
+}
+
+.settings-error {
+  color: #ff3b30;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.settings-segmented {
+  display: inline-flex;
+  background: var(--settings-card);
+  border: 1px solid var(--settings-divider);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.settings-segmented-item {
+  border: none;
+  background: transparent;
+  padding: 4px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 5px;
+  color: var(--text-primary);
+  outline: none;
+  min-width: 56px;
+}
+
+.settings-segmented-item:hover {
+  background: var(--settings-nav-hover);
+}
+
+.settings-segmented-item-active,
+.settings-segmented-item-active:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.settings-color-swatch {
+  width: 36px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--settings-divider);
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+}
+.settings-color-swatch::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.settings-color-swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+.settings-color-swatch:disabled {
+  cursor: not-allowed;
+}

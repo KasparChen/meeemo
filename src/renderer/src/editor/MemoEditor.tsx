@@ -3,6 +3,7 @@ import { PlainTextEditor } from './PlainTextEditor'
 import { TiptapEditor } from './TiptapEditor'
 import { EditorHeader } from './EditorHeader'
 import { useApi } from '../hooks/use-ipc'
+import { resolveTheme, THEME_DEFAULTS, hexToRgb } from '../lib/theme'
 
 type FileType = 'memo' | 'todo'
 
@@ -86,6 +87,32 @@ export function MemoEditor() {
       contentRef.current = c
     }).catch(() => {})
   }, [sessionId]) // eslint-disable-line -- sessionId encapsulates all file identity changes
+
+  // Apply config-driven appearance on mount, on config changes, and on system theme changes
+  useEffect(() => {
+    function applyAppearance() {
+      api.configGet().then((cfg: any) => {
+        const ws = cfg.lastWindowState
+        const eff = resolveTheme(cfg.theme)
+        document.documentElement.setAttribute('data-theme', eff)
+        const panelColor = cfg.theme === 'system' ? THEME_DEFAULTS[eff].panelColor : ws.panelColor
+        const fontColor = cfg.theme === 'system' ? THEME_DEFAULTS[eff].fontColor : ws.fontColor
+        const { r, g, b } = hexToRgb(panelColor)
+        document.documentElement.style.setProperty('--panel-bg', `rgba(${r},${g},${b},${ws.opacity})`)
+        document.documentElement.style.setProperty('--text-primary', fontColor)
+        api.windowSetLevel(ws.alwaysOnTop)
+      })
+    }
+    applyAppearance()
+    const cleanup = api.onConfigChanged(applyAppearance)
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const mqHandler = () => applyAppearance()
+    mq.addEventListener('change', mqHandler)
+    return () => {
+      cleanup?.()
+      mq.removeEventListener('change', mqHandler)
+    }
+  }, [api])
 
   // Cross-window sync (register once with cleanup)
   useEffect(() => {

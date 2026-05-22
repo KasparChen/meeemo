@@ -17,7 +17,8 @@ export default defineConfig({
           palette: resolve(__dirname, 'src/renderer/index.html'),
           editor: resolve(__dirname, 'src/renderer/editor.html'),
           todo: resolve(__dirname, 'src/renderer/todo.html'),
-          reminder: resolve(__dirname, 'src/renderer/reminder.html')
+          reminder: resolve(__dirname, 'src/renderer/reminder.html'),
+          settings: resolve(__dirname, 'src/renderer/settings.html')
         }
       }
     }
