@@ -294,6 +294,15 @@ export function SettingsPage() {
               >
                 Change Location...
               </button>
+              <button
+                className="settings-button"
+                onClick={async () => {
+                  const defaultPath = await api.resetStorage()
+                  setStoragePath(defaultPath)
+                }}
+              >
+                Reset Default
+              </button>
             </div>
           </>
         )}

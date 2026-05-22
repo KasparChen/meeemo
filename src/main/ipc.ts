@@ -2,7 +2,7 @@ import { app, globalShortcut, ipcMain, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { listMemos, searchMemos, readMemo, writeMemo, createMemo, deleteMemo, renameMemo } from './memo-service'
 import { listTodoLists, readTodoList, writeTodoList, createTodoList, deleteTodoList, renameTodoList, totalUncompleted, readTodoRaw, writeTodoRaw, trashTask, deleteTaskToTrash, readTrash, clearTrash, restoreFromTrash, permanentDeleteFromTrash } from './todo-service'
-import { loadConfig, updateConfig, type AppConfig } from './config'
+import { loadConfig, resetStoragePath, updateConfig, type AppConfig } from './config'
 import { saveImage } from './image-service'
 import { updateTrayBadge } from './tray'
 
@@ -172,6 +172,12 @@ export function registerIpcHandlers(): void {
     if (result.canceled || result.filePaths.length === 0) return null
     const newPath = result.filePaths[0]
     const updated = updateConfig({ storagePath: newPath })
+    broadcastToAll('config-changed')
+    return updated.storagePath
+  })
+  ipcMain.handle('app:reset-storage', () => {
+    const updated = resetStoragePath()
+    broadcastToAll('config-changed')
     return updated.storagePath
   })
   ipcMain.handle('window:close', (e) => { BrowserWindow.fromWebContents(e.sender)?.close() })

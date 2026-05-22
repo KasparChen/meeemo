@@ -47,6 +47,7 @@ interface MeeemoAPI {
   openUrl(url: string): Promise<void>
   openStorage(): Promise<void>
   changeStorage(): Promise<string | null>
+  resetStorage(): Promise<string>
   openSettings(section?: string): Promise<void>
   windowClose(): Promise<void>
   onOpenMemo(callback: (filename: string) => void): (() => void) | void

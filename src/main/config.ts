@@ -1,6 +1,9 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync } from 'fs'
 import { join } from 'path'
 import { homedir } from 'os'
+import { app } from 'electron'
+
+export const DEFAULT_STORAGE_PATH = join(homedir(), 'meeemo')
 
 export interface WindowState {
   x: number
@@ -33,7 +36,7 @@ export interface AppConfig {
 }
 
 const DEFAULT_CONFIG: AppConfig = {
-  storagePath: join(homedir(), 'meeemo'),
+  storagePath: DEFAULT_STORAGE_PATH,
   pinnedMemos: [],
   globalShortcut: 'Alt+Space',
   shortcutTarget: 'command',
@@ -60,8 +63,8 @@ const DEFAULT_CONFIG: AppConfig = {
   }
 }
 
-function configPath(storagePath: string): string {
-  return join(storagePath, 'config.json')
+function configFilePath(): string {
+  return join(app.getPath('userData'), 'config.json')
 }
 
 export function ensureStorageDirs(storagePath: string): void {
@@ -87,11 +90,21 @@ export function ensureStorageDirs(storagePath: string): void {
 }
 
 export function loadConfig(): AppConfig {
-  const defaultPath = DEFAULT_CONFIG.storagePath
-  const cfgFile = configPath(defaultPath)
+  const cfgFile = configFilePath()
+
+  // One-time migration: move legacy ~/meeemo/config.json to userData
+  if (!existsSync(cfgFile)) {
+    const legacyCfg = join(homedir(), 'meeemo', 'config.json')
+    if (existsSync(legacyCfg)) {
+      mkdirSync(app.getPath('userData'), { recursive: true })
+      copyFileSync(legacyCfg, cfgFile)
+    }
+  }
 
   if (!existsSync(cfgFile)) {
-    ensureStorageDirs(defaultPath)
+    const defaultStoragePath = DEFAULT_CONFIG.storagePath
+    ensureStorageDirs(defaultStoragePath)
+    mkdirSync(app.getPath('userData'), { recursive: true })
     writeFileSync(cfgFile, JSON.stringify(DEFAULT_CONFIG, null, 2))
     return { ...DEFAULT_CONFIG }
   }
@@ -99,7 +112,6 @@ export function loadConfig(): AppConfig {
   const raw = readFileSync(cfgFile, 'utf-8')
   const saved = JSON.parse(raw) as Partial<AppConfig>
   const config = { ...DEFAULT_CONFIG, ...saved }
-  // Deep-merge lastWindowState so partial saves don't lose defaults
   config.lastWindowState = { ...DEFAULT_CONFIG.lastWindowState, ...(saved.lastWindowState || {}) }
   config.imageHost = { ...DEFAULT_CONFIG.imageHost, ...(saved.imageHost || {}) }
   ensureStorageDirs(config.storagePath)
@@ -107,8 +119,9 @@ export function loadConfig(): AppConfig {
 }
 
 export function saveConfig(config: AppConfig): void {
+  mkdirSync(app.getPath('userData'), { recursive: true })
+  writeFileSync(configFilePath(), JSON.stringify(config, null, 2))
   ensureStorageDirs(config.storagePath)
-  writeFileSync(configPath(config.storagePath), JSON.stringify(config, null, 2))
 }
 
 export function updateConfig(partial: Partial<AppConfig>): AppConfig {
@@ -123,4 +136,8 @@ export function updateConfig(partial: Partial<AppConfig>): AppConfig {
   }
   saveConfig(updated)
   return updated
+}
+
+export function resetStoragePath(): AppConfig {
+  return updateConfig({ storagePath: DEFAULT_STORAGE_PATH })
 }
