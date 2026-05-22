@@ -139,6 +139,10 @@ html[data-window="settings"] #root {
 .settings-button:hover {
   background: var(--settings-nav-hover);
 }
+.settings-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 .settings-button-primary {
   background: var(--accent);
@@ -159,6 +163,43 @@ html[data-window="settings"] #root {
   padding: 8px 10px;
   border-radius: 6px;
   border: 1px solid var(--settings-divider);
+}
+
+.settings-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 0;
+}
+
+.settings-action-row + .settings-action-row {
+  border-top: 1px solid var(--settings-divider);
+}
+
+.settings-action-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-action-title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+
+.settings-action-desc {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.settings-action-buttons {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
 }
 
 .settings-error {
@@ -263,6 +304,16 @@ html[data-window="settings"] #root {
   max-height: 150px;
   overflow-y: auto;
   margin: 12px 0;
+}
+
+.settings-empty-note {
+  color: var(--text-secondary);
+  background: var(--settings-card);
+  border: 1px solid var(--settings-divider);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 10px;
 }
 
 .settings-path-item {

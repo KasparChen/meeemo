@@ -53,6 +53,14 @@ try {
   assert.equal(config.loadConfig().storagePath, defaultStorage)
   assert.deepEqual(config.loadConfig().storagePathHistory, [customStorage])
 
+  const legacyCustomStorage = join(tmp, 'legacy-custom-storage')
+  writeFileSync(
+    join(userData, 'config.json'),
+    JSON.stringify({ ...config.loadConfig(), storagePath: legacyCustomStorage, storagePathHistory: undefined }, null, 2)
+  )
+  assert.equal(config.loadConfig().storagePath, legacyCustomStorage)
+  assert.deepEqual(config.loadConfig().storagePathHistory, [defaultStorage])
+
   const one = join(tmp, 'one')
   const two = join(tmp, 'two')
   const three = join(tmp, 'three')

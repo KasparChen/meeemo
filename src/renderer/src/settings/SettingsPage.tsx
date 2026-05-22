@@ -308,18 +308,31 @@ export function SettingsPage() {
             </div>
 
             <div className="settings-section-title">Storage</div>
-            <div className="settings-storage-path" title={storagePath}>{storagePath}</div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-              <button className="settings-button" onClick={() => api.openStorage()}>Open Folder</button>
-              <button
-                className="settings-button"
-                onClick={async () => {
-                  const newPath = await api.changeStorage()
-                  if (newPath) await refreshStorageConfig()
-                }}
-              >
-                Change Location...
-              </button>
+            <div className="settings-action-row">
+              <div className="settings-action-copy">
+                <div className="settings-action-title">Current location</div>
+                <div className="settings-action-desc">Meeemo stores memos, todos, and image assets in this folder.</div>
+                <div className="settings-storage-path" title={storagePath}>{storagePath}</div>
+              </div>
+              <div className="settings-action-buttons">
+                <button className="settings-button" onClick={() => api.openStorage()}>Open</button>
+                <button
+                  className="settings-button"
+                  onClick={async () => {
+                    const newPath = await api.changeStorage()
+                    if (newPath) await refreshStorageConfig()
+                  }}
+                >
+                  Change...
+                </button>
+              </div>
+            </div>
+
+            <div className="settings-action-row">
+              <div className="settings-action-copy">
+                <div className="settings-action-title">Reset default location</div>
+                <div className="settings-action-desc">Switch storage back to ~/meeemo. Existing files stay where they are unless you migrate them.</div>
+              </div>
               <button
                 className="settings-button"
                 onClick={async () => {
@@ -329,9 +342,17 @@ export function SettingsPage() {
               >
                 Reset Default
               </button>
+            </div>
+
+            <div className="settings-action-row">
+              <div className="settings-action-copy">
+                <div className="settings-action-title">Migrate previous storage</div>
+                <div className="settings-action-desc">
+                  Copy files from an older location into the current folder. Duplicate names are kept by adding a number.
+                </div>
+              </div>
               <button
                 className="settings-button"
-                disabled={storagePathHistory.length === 0}
                 onClick={() => {
                   setMigrationSource(storagePathHistory[0] || '')
                   setMigrationStatus('')
@@ -590,16 +611,20 @@ export function SettingsPage() {
             <div className="settings-modal-copy">Copy files from a previous storage location into the current one.</div>
             <div className="settings-storage-path" title={storagePath}>Current: {storagePath}</div>
             <div className="settings-path-list">
-              {storagePathHistory.map((path) => (
-                <button
-                  key={path}
-                  className={`settings-path-item ${migrationSource === path ? 'settings-path-item-active' : ''}`}
-                  onClick={() => setMigrationSource(path)}
-                  title={path}
-                >
-                  {path}
-                </button>
-              ))}
+              {storagePathHistory.length === 0 ? (
+                <div className="settings-empty-note">No previous storage locations yet. Change location once, then this list will show the folder you moved away from.</div>
+              ) : (
+                storagePathHistory.map((path) => (
+                  <button
+                    key={path}
+                    className={`settings-path-item ${migrationSource === path ? 'settings-path-item-active' : ''}`}
+                    onClick={() => setMigrationSource(path)}
+                    title={path}
+                  >
+                    {path}
+                  </button>
+                ))
+              )}
             </div>
             <label className="settings-checkbox-row">
               <input

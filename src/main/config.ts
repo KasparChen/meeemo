@@ -90,6 +90,18 @@ function normalizeStoragePathHistory(paths: string[], currentPath: string): stri
   return result
 }
 
+function storagePathHistoryWithLegacyDefault(saved: Partial<AppConfig>, currentPath: string): string[] {
+  const candidates = [...(saved.storagePathHistory || [])]
+  if (
+    saved.storagePath &&
+    !saved.storagePathHistory &&
+    normalizeStoragePath(saved.storagePath) !== normalizeStoragePath(DEFAULT_STORAGE_PATH)
+  ) {
+    candidates.push(DEFAULT_STORAGE_PATH)
+  }
+  return normalizeStoragePathHistory(candidates, currentPath)
+}
+
 export function ensureStorageDirs(storagePath: string): void {
   mkdirSync(join(storagePath, 'memo'), { recursive: true })
   mkdirSync(join(storagePath, 'todo'), { recursive: true })
@@ -135,7 +147,7 @@ export function loadConfig(): AppConfig {
   const raw = readFileSync(cfgFile, 'utf-8')
   const saved = JSON.parse(raw) as Partial<AppConfig>
   const config = { ...DEFAULT_CONFIG, ...saved }
-  config.storagePathHistory = normalizeStoragePathHistory(saved.storagePathHistory || [], config.storagePath)
+  config.storagePathHistory = storagePathHistoryWithLegacyDefault(saved, config.storagePath)
   config.lastWindowState = { ...DEFAULT_CONFIG.lastWindowState, ...(saved.lastWindowState || {}) }
   config.imageHost = { ...DEFAULT_CONFIG.imageHost, ...(saved.imageHost || {}) }
   ensureStorageDirs(config.storagePath)
