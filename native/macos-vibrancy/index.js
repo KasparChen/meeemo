@@ -16,10 +16,10 @@ if (process.platform === 'darwin') {
   }
   if (!binding) {
     console.warn('[macos-vibrancy] Native addon not found, vibrancy disabled');
-    binding = { setVibrancy() {}, removeVibrancy() {} };
+    binding = { setVibrancy() {}, removeVibrancy() {}, setBackgroundBlurRadius() {} };
   }
 } else {
-  binding = { setVibrancy() {}, removeVibrancy() {} };
+  binding = { setVibrancy() {}, removeVibrancy() {}, setBackgroundBlurRadius() {} };
 }
 
 module.exports = binding;

@@ -57,8 +57,8 @@ const DEFAULT_CONFIG: AppConfig = {
     y: -1,
     width: 400,
     height: 450,
-    opacity: 0.85,
-    blur: 20,
+    opacity: 0.5,
+    blur: 24,
     panelColor: '#ffffff',
     fontColor: '#1a1a1a',
     alwaysOnTop: 'always'

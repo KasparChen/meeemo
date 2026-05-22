@@ -141,8 +141,14 @@ export function createEditorWindow(filename?: string): BrowserWindow {
     }
   })
 
-  // Native vibrancy always on — blur is fixed, opacity via CSS --panel-bg alpha
-  loadNativeVibrancy().setVibrancy(editorWindow.getNativeWindowHandle(), 'under-window')
+  // Private CGSSetWindowBackgroundBlurRadius blurs the screen content behind
+  // the window directly (the same trick Terminal / wezterm / ghostty use).
+  // NSVisualEffectView would paint an opaque material instead.
+  try {
+    loadNativeVibrancy().setBackgroundBlurRadius(editorWindow.getNativeWindowHandle(), ws.blur ?? 24)
+  } catch (e) {
+    console.warn('[blur] setBackgroundBlurRadius failed:', (e as Error).message)
+  }
 
   if (ws.alwaysOnTop === 'always') {
     editorWindow.setAlwaysOnTop(true, 'floating')
@@ -197,9 +203,9 @@ function todoPosition(trayBounds?: Electron.Rectangle): { x: number; y: number }
   }
 }
 
-export function createTodoWindow(trayBounds?: Electron.Rectangle): BrowserWindow {
+export function createTodoWindow(trayBounds?: Electron.Rectangle, forceShow = false): BrowserWindow {
   if (todoWindow && !todoWindow.isDestroyed()) {
-    if (todoWindow.isVisible()) {
+    if (!forceShow && todoWindow.isVisible()) {
       todoWindow.hide()
       return todoWindow
     }
@@ -385,6 +391,15 @@ export function createSettingsWindow(section: SettingsSection = 'general'): Brow
   settingsWindow.on('closed', () => { settingsWindow = null })
 
   return settingsWindow
+}
+
+export function applyEditorBlur(radius: number): void {
+  if (!editorWindow || editorWindow.isDestroyed()) return
+  try {
+    loadNativeVibrancy().setBackgroundBlurRadius(editorWindow.getNativeWindowHandle(), radius)
+  } catch (e) {
+    console.warn('[blur] applyEditorBlur failed:', (e as Error).message)
+  }
 }
 
 export function hidePalette(): void {

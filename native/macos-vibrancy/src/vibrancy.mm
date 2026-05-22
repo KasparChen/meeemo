@@ -3,6 +3,15 @@
 
 static NSString* const kVibrancyId = @"meeemo_vibrancy";
 
+// Private CoreGraphics API used by Terminal, wezterm, ghostty for true window blur.
+// Resolved at link time from the SkyLight framework (loaded via AppKit).
+extern "C" {
+    typedef int CGSConnectionID;
+    typedef uint32_t CGSWindowID;
+    CGSConnectionID CGSMainConnectionID(void);
+    OSStatus CGSSetWindowBackgroundBlurRadius(CGSConnectionID cid, CGSWindowID wid, int blur);
+}
+
 static NSView* ViewFromBuffer(Napi::Buffer<unsigned char> buf) {
     void* ptr = *reinterpret_cast<void**>(buf.Data());
     return (__bridge NSView*)ptr;
@@ -69,9 +78,30 @@ Napi::Value RemoveVibrancy(const Napi::CallbackInfo& info) {
     return env.Null();
 }
 
+Napi::Value SetBackgroundBlurRadius(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    if (info.Length() < 2 || !info[0].IsBuffer() || !info[1].IsNumber()) {
+        Napi::TypeError::New(env, "Expected (Buffer, Number)")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    NSView* rootView = ViewFromBuffer(info[0].As<Napi::Buffer<unsigned char>>());
+    if (!rootView || !rootView.window) return env.Null();
+
+    int blur = info[1].As<Napi::Number>().Int32Value();
+    NSWindow* nswin = rootView.window;
+    CGSConnectionID conn = CGSMainConnectionID();
+    CGSWindowID wid = (CGSWindowID)[nswin windowNumber];
+
+    CGSSetWindowBackgroundBlurRadius(conn, wid, blur);
+    return env.Null();
+}
+
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set("setVibrancy", Napi::Function::New(env, SetVibrancy));
     exports.Set("removeVibrancy", Napi::Function::New(env, RemoveVibrancy));
+    exports.Set("setBackgroundBlurRadius", Napi::Function::New(env, SetBackgroundBlurRadius));
     return exports;
 }
 

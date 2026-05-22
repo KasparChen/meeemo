@@ -238,6 +238,7 @@ export function TodoPopover() {
   const [viewMode, setViewMode] = useState<ViewMode>('todo')
   const [memos, setMemos] = useState<MemoMeta[]>([])
   const [tabOrder, setTabOrder] = useState<ViewMode[]>(['todo', 'note'])
+  const addTaskInputRef = useRef<HTMLInputElement>(null)
 
   // Force re-render every 30s so overdue colors update in real time
   const [, setTick] = useState(0)
@@ -292,6 +293,21 @@ export function TodoPopover() {
     loadTrash()
     loadMemos()
   }, [loadLists, loadMemos])
+
+  useEffect(() => {
+    const cleanup = api.onFocusNewTodo?.(() => {
+      setViewMode('todo')
+      setShowTrash(false)
+      setLists((curr) => {
+        if (curr.length > 0) {
+          setActiveFilename((prev) => prev || curr[0].filename)
+        }
+        return curr
+      })
+      setTimeout(() => addTaskInputRef.current?.focus(), 80)
+    })
+    return () => { cleanup?.() }
+  }, [api])
 
   useEffect(() => {
     api.configGet().then((cfg) => {
@@ -567,18 +583,41 @@ export function TodoPopover() {
               </button>
             </>
           ) : (
-            <button
-              onClick={handleCreateMemo}
-              className="text-xs px-2 py-1 rounded transition-colors"
-              style={{
-                background: 'rgba(0,0,0,0.06)',
-                color: 'var(--text-primary)',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              + New
-            </button>
+            <>
+              <button
+                onClick={() => api.openSettings()}
+                className="px-1 transition-colors"
+                style={{
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                title="Settings"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+              </button>
+              <button
+                onClick={handleCreateMemo}
+                className="text-xs px-2 py-1 rounded transition-colors"
+                style={{
+                  background: 'rgba(0,0,0,0.06)',
+                  color: 'var(--text-primary)',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                + New
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -740,6 +779,7 @@ export function TodoPopover() {
         {/* Add task input */}
         <div className="px-3 py-2">
           <input
+            ref={addTaskInputRef}
             value={newTaskText}
             onChange={(e) => setNewTaskText(e.target.value)}
             onKeyDown={(e) => {

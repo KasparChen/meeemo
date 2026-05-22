@@ -1,6 +1,7 @@
-import { app, Tray, nativeImage } from 'electron'
-import { createTodoWindow } from './windows'
+import { app, Menu, Tray, nativeImage } from 'electron'
+import { createTodoWindow, createEditorWindow } from './windows'
 import { listTodoLists } from './todo-service'
+import { listMemos, createMemo } from './memo-service'
 import { parseReminderToDate } from './reminder-scheduler'
 
 let tray: Tray | null = null
@@ -30,6 +31,47 @@ function makeCatIcon(): Electron.NativeImage {
   return img
 }
 
+function openNewMemo(): void {
+  app.focus({ steal: true })
+  const title = `Untitled ${new Date().toISOString().slice(0, 10)}`
+  const filename = createMemo(title)
+  createEditorWindow(filename)
+}
+
+function openLatestMemo(): void {
+  app.focus({ steal: true })
+  const memos = listMemos()
+  if (memos.length === 0) {
+    openNewMemo()
+    return
+  }
+  createEditorWindow(memos[0].filename)
+}
+
+function openNewTodo(bounds: Electron.Rectangle | undefined): void {
+  app.focus({ steal: true })
+  const win = createTodoWindow(bounds, true)
+  // Delay so the renderer's onFocusNewTodo listener (registered in a React
+  // useEffect) is wired up before the message lands. Without this, fresh
+  // todoWindow mounts miss the event entirely.
+  const sendFocus = (): void => setTimeout(() => win.webContents.send('focus-new-todo'), 150)
+  if (win.webContents.isLoading()) {
+    win.webContents.once('did-finish-load', sendFocus)
+  } else {
+    sendFocus()
+  }
+}
+
+function buildTrayMenu(bounds: Electron.Rectangle | undefined): Menu {
+  return Menu.buildFromTemplate([
+    { label: 'New Note', click: () => openNewMemo() },
+    { label: 'New Todo', click: () => openNewTodo(bounds) },
+    { label: 'Open Latest', click: () => openLatestMemo() },
+    { type: 'separator' },
+    { label: 'Quit Meeemo', role: 'quit' }
+  ])
+}
+
 export function createTray(): Tray {
   tray = new Tray(makeCatIcon())
   tray.setToolTip('Meeemo')
@@ -39,6 +81,10 @@ export function createTray(): Tray {
     // Bring app to foreground so menu bar switches to Meeemo's menu (File / Settings / ...)
     app.focus({ steal: true })
     createTodoWindow(bounds)
+  })
+
+  tray.on('right-click', (_event, bounds) => {
+    tray?.popUpContextMenu(buildTrayMenu(bounds))
   })
 
   return tray

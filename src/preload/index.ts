@@ -50,6 +50,11 @@ const api = {
     ipcRenderer.on('show-todo', handler)
     return () => { ipcRenderer.removeListener('show-todo', handler) }
   },
+  onFocusNewTodo: (callback: () => void) => {
+    const handler = () => callback()
+    ipcRenderer.on('focus-new-todo', handler)
+    return () => { ipcRenderer.removeListener('focus-new-todo', handler) }
+  },
   onDataChanged: (callback: () => void) => {
     const handler = () => callback()
     ipcRenderer.on('data-changed', handler)

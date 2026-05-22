@@ -108,6 +108,11 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('config:get', () => loadConfig())
   ipcMain.handle('config:set', (_e, partial: Partial<AppConfig>) => {
     const updated = updateConfig(partial)
+    const nextBlur = (partial.lastWindowState as any)?.blur
+    if (typeof nextBlur === 'number') {
+      const { applyEditorBlur } = require('./windows')
+      applyEditorBlur(nextBlur)
+    }
     broadcastToAll('config-changed')
     return updated
   })

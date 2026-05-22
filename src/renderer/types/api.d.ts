@@ -55,6 +55,7 @@ interface MeeemoAPI {
   windowClose(): Promise<void>
   onOpenMemo(callback: (filename: string) => void): (() => void) | void
   onShowTodo(callback: () => void): (() => void) | void
+  onFocusNewTodo(callback: () => void): (() => void) | void
   onDataChanged(callback: () => void): (() => void) | void
   onReminderAlert(callback: () => void): (() => void) | void
   onReminderData(callback: (data: { title: string; body: string }[]) => void): (() => void) | void

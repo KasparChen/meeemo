@@ -100,6 +100,8 @@ export function MemoEditor() {
         const { r, g, b } = hexToRgb(panelColor)
         document.documentElement.style.setProperty('--panel-bg', `rgba(${r},${g},${b},${ws.opacity})`)
         document.documentElement.style.setProperty('--text-primary', fontColor)
+        const blurPx = typeof ws.blur === 'number' ? ws.blur : 24
+        document.documentElement.style.setProperty('--panel-blur', `${blurPx}px`)
         api.windowSetLevel(ws.alwaysOnTop)
       })
     }

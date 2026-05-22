@@ -45,7 +45,8 @@ export function SettingsPage() {
 
   // Appearance
   const [theme, setTheme] = useState<ThemeSetting>('system')
-  const [opacity, setOpacity] = useState(0.85)
+  const [opacity, setOpacity] = useState(0.5)
+  const [blur, setBlur] = useState(24)
   const [panelColor, setPanelColor] = useState('#ffffff')
   const [fontColor, setFontColor] = useState('#1a1a1a')
   const [level, setLevel] = useState<WindowLevel>('always')
@@ -92,6 +93,7 @@ export function SettingsPage() {
       setImageHostUploadUrl(ih.uploadUrl || '')
       const ws = cfg.lastWindowState
       setOpacity(ws.opacity)
+      setBlur(typeof ws.blur === 'number' ? ws.blur : 24)
       setPanelColor(ws.panelColor)
       setFontColor(ws.fontColor)
       setLevel(ws.alwaysOnTop)
@@ -416,6 +418,23 @@ export function SettingsPage() {
                 />
                 <span style={{ fontSize: 12, color: 'var(--text-secondary)', width: 36, textAlign: 'right' }}>
                   {Math.round(opacity * 100)}%
+                </span>
+              </div>
+            </div>
+            <div className="settings-row">
+              <span className="settings-row-label">Blur</span>
+              <div className="settings-row-control" style={{ gap: 8, alignItems: 'center' }}>
+                <input
+                  type="range" min={0} max={60}
+                  value={blur}
+                  onChange={(e) => {
+                    const v = Number(e.target.value)
+                    setBlur(v); updateWindowState({ blur: v })
+                  }}
+                  style={{ width: 180 }}
+                />
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)', width: 36, textAlign: 'right' }}>
+                  {blur}px
                 </span>
               </div>
             </div>
