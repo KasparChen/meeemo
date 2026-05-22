@@ -1,6 +1,6 @@
 {
   "name": "meeemo",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A Raycast-style desktop memo app",
   "main": "./out/main/index.js",
   "scripts": {

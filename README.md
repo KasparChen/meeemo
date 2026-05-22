@@ -20,6 +20,35 @@
 
 ## Update Log
 
+### v0.3.0
+
+**Settings & Menu**
+- **Unified Settings** — Independent Settings window with sidebar nav (General / Appearance / Image Host / Check for Update). All preferences (hotkey, theme, opacity, blur, storage, image host) live in one place.
+- **Native macOS Menu Bar** — Meeemo / Settings / File / Edit / View / Window / Help. ⌘N new memo, ⌘⇧N new todo list, ⌘, settings, ⌘⇧O reveal storage in Finder.
+
+**Tray & Panel**
+- **Right-click Tray Menu** — New Note (create + open), New Todo (focus first list's add input), Open Latest, Quit.
+- **Todo / Note Dual Tab** — The tray popover now hosts both a Todo tab and a Note tab; drag the tabs to swap their order.
+- **Note Tab** — Lists all memos with double-click rename, drag-to-reorder, hover delete (with confirm), and click-to-open. Quick + New and settings gear in the tab header.
+- **Cat Tray Icon** — Empty todo list shows a cat icon; non-empty shows a checkmark with the unfinished count.
+
+**Editor**
+- **True Window Blur** — Replaced opaque NSVisualEffectView with private SkyLight blur (the trick Terminal / wezterm use). Behind the window now actually blurs, including other apps.
+- **Independent Blur Slider** — Opacity and blur are now two separate Appearance controls.
+- **System Theme** — Theme adds a `system` option that follows macOS appearance in real time.
+
+**Todo**
+- **Pin Tasks** — Click 📌 to pin a task to the top of the list. Pinned tasks keep their position even when checked off; new tasks land after the pin segment.
+- **Inline Rename** — Double-click a task text to edit; Enter / blur to commit, Esc to cancel.
+- **Drag-Drop Fix** — Drop animation now lands on the final position without the previous bounce-back.
+
+**Storage**
+- **Reliable Path Persistence** — Config moved to `~/Library/Application Support/Meeemo/`, so changing the storage path no longer loses the new value after restart.
+- **Migrate from Previous Storage** — Copy files from any previously used storage folder into the current one, with an optional source delete confirmation.
+
+**Bug Fixes**
+- Editor close handler used a stale closure snapshot of `lastWindowState`, overwriting any panel / font color / opacity changes made during the session. Now only window bounds get persisted on close.
+
 ### v0.2.0
 
 **TODO Task**
@@ -118,6 +147,35 @@ resources/       # App icon
 Meeemo 是一款 macOS 桌面便签应用，灵感来自 Raycast。按下快捷键即可唤起命令面板，快速创建、搜索和编辑备忘录。编辑器窗口支持原生毛玻璃半透明效果，可自定义透明度、面板颜色和字体颜色。
 
 ### 更新日志
+
+#### v0.3.0
+
+**设置与菜单**
+- **统一设置中心** — 独立 Settings 窗口（左侧导航：General / Appearance / Image Host / Check for Update），所有偏好（热键、主题、透明度、blur、存储路径、图床）集中一处管理
+- **原生 macOS 顶栏菜单** — Meeemo / Settings / File / Edit / View / Window / Help。`⌘N` 新建 memo、`⌘⇧N` 新建 todo list、`⌘,` 打开设置、`⌘⇧O` 在 Finder 中显示存储目录
+
+**Tray 与面板**
+- **Tray 右键菜单** — New Note（直接创建并打开）、New Todo（弹出面板并 focus 到首个 list 的添加输入框）、Open Latest（打开最近编辑的 note）、Quit
+- **Todo / Note 双 Tab** — Tray popover 同时承载待办和笔记两个 Tab，长按可拖拽互换顺序
+- **Note Tab** — 列出所有 memo，双击重命名，拖拽排序，hover 删除带二次确认，点击直接打开；右上 + New 与设置齿轮快捷入口
+- **猫咪 Tray 图标** — 没有待办时显示猫咪图标，有待办时切回 checkmark + 未完成数量角标
+
+**编辑器**
+- **真实窗口模糊** — 去掉了不透明的 NSVisualEffectView，改用 SkyLight 私有 API（Terminal / wezterm / ghostty 同款）让窗户后方真实模糊，包括其他 App 的内容
+- **独立 Blur 滑块** — Settings → Appearance 把 opacity 与 blur 拆成两个独立可调的滑块
+- **System 主题** — Theme 新增 system 选项，跟随 macOS 外观实时切换
+
+**待办**
+- **任务置顶** — 点击 📌 把任务置顶。置顶任务即使勾选完成也留在 pin 段不下沉，新建任务落在 pin 段之后
+- **双击重命名** — 直接双击任务文本进入编辑态，回车 / 失焦提交，Esc 取消
+- **拖拽手感修复** — drop 动画直接落到最终位置，不再回弹
+
+**存储**
+- **路径持久化修复** — config.json 移到 `~/Library/Application Support/Meeemo/`，更改存储路径后重启不再丢失
+- **迁移历史目录** — 从任意曾经用过的目录把文件迁到当前目录，可选迁移后删除源目录（带二次确认）
+
+**Bug 修复**
+- 修复编辑器关闭时用 closure 旧快照覆盖 `lastWindowState`，导致 session 中改的 panel / font color / opacity 被回滚的问题；现在关闭只持久化窗口位置
 
 #### v0.2.0
 
