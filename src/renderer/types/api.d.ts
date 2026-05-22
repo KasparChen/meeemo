@@ -51,6 +51,7 @@ interface MeeemoAPI {
   resetStorage(): Promise<AppConfig>
   migrateStorage(sourcePath: string, keepSource: boolean): Promise<{ copied: number; renamed: number; removedSource: boolean }>
   openSettings(section?: string): Promise<void>
+  openMemo(filename: string): Promise<void>
   windowClose(): Promise<void>
   onOpenMemo(callback: (filename: string) => void): (() => void) | void
   onShowTodo(callback: () => void): (() => void) | void

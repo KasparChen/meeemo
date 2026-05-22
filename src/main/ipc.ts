@@ -163,6 +163,10 @@ export function registerIpcHandlers(): void {
     const { createSettingsWindow } = require('./windows')
     createSettingsWindow(section || 'general')
   })
+  ipcMain.handle('app:open-memo', (_e, filename: string) => {
+    const { createEditorWindow } = require('./windows')
+    createEditorWindow(filename)
+  })
   ipcMain.handle('app:change-storage', async () => {
     const { dialog } = require('electron')
     const win = BrowserWindow.getAllWindows()[0]

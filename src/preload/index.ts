@@ -38,6 +38,7 @@ const api = {
   resetStorage: () => ipcRenderer.invoke('app:reset-storage'),
   migrateStorage: (sourcePath: string, keepSource: boolean) => ipcRenderer.invoke('app:migrate-storage', sourcePath, keepSource),
   openSettings: (section?: string) => ipcRenderer.invoke('app:open-settings', section),
+  openMemo: (filename: string) => ipcRenderer.invoke('app:open-memo', filename),
   windowClose: () => ipcRenderer.invoke('window:close'),
   onOpenMemo: (callback: (filename: string) => void) => {
     const handler = (_e: any, filename: string) => callback(filename)

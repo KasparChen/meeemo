@@ -12,12 +12,161 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  horizontalListSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { TodoItem } from './TodoItem'
 import { TodoTabBar } from './TodoTabBar'
 import { useApi } from '../hooks/use-ipc'
+
+type ViewMode = 'todo' | 'note'
+
+function SortableViewTab({
+  id,
+  label,
+  active,
+  onSelect
+}: {
+  id: ViewMode
+  label: string
+  active: boolean
+  onSelect: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+    background: active ? 'rgba(0,0,0,0.06)' : 'transparent',
+    cursor: isDragging ? 'grabbing' : 'pointer',
+    opacity: isDragging ? 0.7 : 1
+  }
+  return (
+    <button
+      ref={setNodeRef}
+      onClick={onSelect}
+      className="text-sm font-semibold px-2.5 py-1 rounded-md transition-colors"
+      style={{ border: 'none', ...style }}
+      {...attributes}
+      {...listeners}
+    >
+      {label}
+    </button>
+  )
+}
+
+function SortableMemoItem({
+  id,
+  filename,
+  title,
+  modifiedAt,
+  preview,
+  onOpen,
+  onRename,
+  onDelete
+}: {
+  id: string
+  filename: string
+  title: string
+  modifiedAt: number
+  preview: string
+  onOpen: () => void
+  onRename: (newTitle: string) => void
+  onDelete: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
+  const [isEditing, setIsEditing] = useState(false)
+  const [draft, setDraft] = useState(title)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditing])
+
+  const beginEdit = () => {
+    setDraft(title)
+    setIsEditing(true)
+  }
+  const commitEdit = () => {
+    const next = draft.trim()
+    if (next && next !== title) onRename(next)
+    setIsEditing(false)
+  }
+  const cancelEdit = () => {
+    setDraft(title)
+    setIsEditing(false)
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      {...attributes}
+    >
+      <div
+        className="group flex items-center gap-2 px-3 py-2 transition-colors"
+        style={{
+          borderBottom: '1px solid var(--border-color)',
+          cursor: isEditing ? 'default' : 'pointer',
+          background: 'transparent'
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.04)')}
+        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+        onClick={() => { if (!isEditing) onOpen() }}
+      >
+        <span
+          className="text-xs cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+          style={{ color: 'var(--text-secondary)', opacity: 0.5 }}
+          onClick={(e) => e.stopPropagation()}
+          {...listeners}
+        >
+          ⋮⋮
+        </span>
+        <div className="flex-1 min-w-0" onDoubleClick={(e) => { e.stopPropagation(); beginEdit() }}>
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commitEdit}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); commitEdit() }
+                else if (e.key === 'Escape') { e.preventDefault(); cancelEdit() }
+              }}
+              className="text-sm font-medium block w-full bg-transparent outline-none border-0 p-0"
+              style={{ color: 'var(--text-primary)', font: 'inherit' }}
+            />
+          ) : (
+            <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+              {title || 'Untitled'}
+            </div>
+          )}
+          <div className="text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+            {new Date(modifiedAt).toLocaleDateString()}
+            {preview ? ` · ${preview}` : ''}
+          </div>
+        </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete() }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="opacity-0 group-hover:opacity-100 text-xs transition-opacity flex-shrink-0"
+          style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#ff3b30')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+          title="Delete"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function SortableTodoItem({
   id,
@@ -70,6 +219,9 @@ export function TodoPopover() {
   const [showOverdueBanner, setShowOverdueBanner] = useState(false)
   const [showTrash, setShowTrash] = useState(false)
   const [trashTasks, setTrashTasks] = useState<TodoTask[]>([])
+  const [viewMode, setViewMode] = useState<ViewMode>('todo')
+  const [memos, setMemos] = useState<MemoMeta[]>([])
+  const [tabOrder, setTabOrder] = useState<ViewMode[]>(['todo', 'note'])
 
   // Force re-render every 30s so overdue colors update in real time
   const [, setTick] = useState(0)
@@ -97,18 +249,54 @@ export function TodoPopover() {
     }
   }, [api, activeFilename])
 
+  const loadMemos = useCallback(async () => {
+    const all = await api.memoList()
+    const config = await api.configGet()
+    const order: string[] = (config as any).memoOrder || []
+    if (order.length === 0) { setMemos(all); return }
+    const sorted = [...all].sort((a, b) => {
+      const ai = order.indexOf(a.filename)
+      const bi = order.indexOf(b.filename)
+      if (ai === -1 && bi === -1) return 0
+      if (ai === -1) return 1
+      if (bi === -1) return -1
+      return ai - bi
+    })
+    setMemos(sorted)
+  }, [api])
+
   // Use ref so IPC listeners always call the latest loadLists without re-registering
   const loadListsRef = useRef(loadLists)
   loadListsRef.current = loadLists
+  const loadMemosRef = useRef(loadMemos)
+  loadMemosRef.current = loadMemos
 
   useEffect(() => {
     loadLists()
     loadTrash()
-  }, [loadLists])
+    loadMemos()
+  }, [loadLists, loadMemos])
+
+  useEffect(() => {
+    api.configGet().then((cfg) => {
+      const order = (cfg as any).viewTabOrder
+      if (
+        Array.isArray(order) &&
+        order.length === 2 &&
+        order.includes('todo') &&
+        order.includes('note')
+      ) {
+        setTabOrder(order as ViewMode[])
+      }
+    })
+  }, [api])
 
   // Register IPC listeners ONCE, use ref to call latest callback
   useEffect(() => {
-    const cleanupData = api.onDataChanged(() => loadListsRef.current())
+    const cleanupData = api.onDataChanged(() => {
+      loadListsRef.current()
+      loadMemosRef.current()
+    })
     const cleanupAlert = typeof api.onReminderAlert === 'function'
       ? api.onReminderAlert(() => {
           loadListsRef.current()
@@ -224,6 +412,47 @@ export function TodoPopover() {
     loadLists()
   }
 
+  const handleCreateMemo = async () => {
+    const title = `Untitled ${new Date().toISOString().slice(0, 10)}`
+    const filename = await api.memoCreate(title)
+    await api.openMemo(filename)
+  }
+
+  const handleRenameMemo = async (filename: string, newTitle: string) => {
+    await api.memoRename(filename, newTitle)
+  }
+
+  const handleDeleteMemo = async (filename: string, title: string) => {
+    if (!window.confirm(`Delete "${title || filename.replace('.md', '')}"?\n\nThis cannot be undone.`)) return
+    await api.memoDelete(filename)
+  }
+
+  const handleTabDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = tabOrder.indexOf(active.id as ViewMode)
+    const newIndex = tabOrder.indexOf(over.id as ViewMode)
+    if (oldIndex < 0 || newIndex < 0) return
+    const next = [...tabOrder]
+    const [removed] = next.splice(oldIndex, 1)
+    next.splice(newIndex, 0, removed)
+    setTabOrder(next)
+    api.configSet({ viewTabOrder: next } as any)
+  }
+
+  const handleMemoDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = memos.findIndex((m) => `memo-${m.filename}` === active.id)
+    const newIndex = memos.findIndex((m) => `memo-${m.filename}` === over.id)
+    if (oldIndex < 0 || newIndex < 0) return
+    const reordered = [...memos]
+    const [removed] = reordered.splice(oldIndex, 1)
+    reordered.splice(newIndex, 0, removed)
+    setMemos(reordered)
+    api.configSet({ memoOrder: reordered.map((m) => m.filename) } as any)
+  }
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -256,50 +485,79 @@ export function TodoPopover() {
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 py-2.5"
+        className="flex items-center justify-between px-3 py-2"
         style={{ borderBottom: '1px solid var(--border-color)' }}
       >
-        <span
-          className="text-sm font-semibold"
-          style={{ color: 'var(--text-primary)' }}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleTabDragEnd}
         >
-          {activeList?.name || 'TODO'}
-        </span>
+          <SortableContext items={tabOrder} strategy={horizontalListSortingStrategy}>
+            <div className="flex items-center gap-0.5">
+              {tabOrder.map((m) => (
+                <SortableViewTab
+                  key={m}
+                  id={m}
+                  label={m === 'todo' ? 'Todo' : 'Note'}
+                  active={viewMode === m}
+                  onSelect={() => { setViewMode(m); setShowTrash(false) }}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
         <div className="flex items-center gap-1">
-          {/* Overdue indicator */}
-          {overdueTasks.length > 0 && (
+          {viewMode === 'todo' ? (
+            <>
+              {overdueTasks.length > 0 && (
+                <button
+                  onClick={() => setShowOverdueBanner(!showOverdueBanner)}
+                  className="text-xs px-2 py-1 rounded transition-colors"
+                  style={{
+                    background: 'rgba(180, 130, 60, 0.15)',
+                    color: '#a1845c',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                  title="Show overdue tasks"
+                >
+                  {overdueTasks.length}!
+                </button>
+              )}
+              <button
+                onClick={() => setShowCompleted(!showCompleted)}
+                className="text-xs px-2 py-1 rounded transition-colors"
+                style={{
+                  background: showCompleted ? 'rgba(0,0,0,0.06)' : 'var(--accent)',
+                  color: showCompleted ? 'var(--text-secondary)' : '#fff',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                {showCompleted ? 'All' : 'Active'}
+              </button>
+            </>
+          ) : (
             <button
-              onClick={() => setShowOverdueBanner(!showOverdueBanner)}
+              onClick={handleCreateMemo}
               className="text-xs px-2 py-1 rounded transition-colors"
               style={{
-                background: 'rgba(180, 130, 60, 0.15)',
-                color: '#a1845c',
+                background: 'rgba(0,0,0,0.06)',
+                color: 'var(--text-primary)',
                 border: 'none',
-                cursor: 'pointer',
-                fontWeight: 600
+                cursor: 'pointer'
               }}
-              title="Show overdue tasks"
             >
-              {overdueTasks.length}!
+              + New
             </button>
           )}
-          <button
-            onClick={() => setShowCompleted(!showCompleted)}
-            className="text-xs px-2 py-1 rounded transition-colors"
-            style={{
-              background: showCompleted ? 'rgba(0,0,0,0.06)' : 'var(--accent)',
-              color: showCompleted ? 'var(--text-secondary)' : '#fff',
-              border: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            {showCompleted ? 'All' : 'Active'}
-          </button>
         </div>
       </div>
 
-      {/* Overdue alert banner — collapsible */}
-      {overdueTasks.length > 0 && showOverdueBanner && (
+      {/* Overdue alert banner, collapsible */}
+      {viewMode === 'todo' && overdueTasks.length > 0 && showOverdueBanner && (
         <div
           className="px-4 py-2 text-xs flex items-start gap-2"
           style={{
@@ -326,7 +584,38 @@ export function TodoPopover() {
 
       {/* Task list */}
       <div className="flex-1 overflow-y-auto py-1">
-        {showTrash ? (
+        {viewMode === 'note' ? (
+          memos.length === 0 ? (
+            <div className="text-center text-xs py-8" style={{ color: 'var(--text-secondary)' }}>
+              No notes yet. Click + New to create one.
+            </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleMemoDragEnd}
+            >
+              <SortableContext
+                items={memos.map((m) => `memo-${m.filename}`)}
+                strategy={verticalListSortingStrategy}
+              >
+                {memos.map((m) => (
+                  <SortableMemoItem
+                    key={`memo-${m.filename}`}
+                    id={`memo-${m.filename}`}
+                    filename={m.filename}
+                    title={m.title}
+                    modifiedAt={m.modifiedAt}
+                    preview={m.preview}
+                    onOpen={() => api.openMemo(m.filename)}
+                    onRename={(t) => handleRenameMemo(m.filename, t)}
+                    onDelete={() => handleDeleteMemo(m.filename, m.title)}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          )
+        ) : showTrash ? (
           <div className="px-3 py-2">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
@@ -448,7 +737,8 @@ export function TodoPopover() {
         )}
       </div>
 
-      {/* Tab bar */}
+      {/* Tab bar, only in Todo mode */}
+      {viewMode === 'todo' && (
       <TodoTabBar
         lists={lists.map((l) => ({ filename: l.filename, name: l.name }))}
         activeFilename={activeFilename}
@@ -478,6 +768,7 @@ export function TodoPopover() {
           api.configSet({ todoOrder: filenames } as any)
         }}
       />
+      )}
     </div>
   )
 }
