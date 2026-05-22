@@ -72,10 +72,12 @@ interface TodoItemProps {
   text: string
   done: boolean
   reminder?: string
+  pinned?: boolean
   onToggle: () => void
   onDelete: () => void
   onSetReminder: (reminder: string | undefined) => void
   onRename: (text: string) => void
+  onTogglePin: () => void
   dragHandleProps?: Record<string, unknown>
 }
 
@@ -83,10 +85,12 @@ export function TodoItem({
   text,
   done,
   reminder,
+  pinned,
   onToggle,
   onDelete,
   onSetReminder,
   onRename,
+  onTogglePin,
   dragHandleProps
 }: TodoItemProps) {
   const [showPicker, setShowPicker] = useState(false)
@@ -241,6 +245,17 @@ export function TodoItem({
           onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
         >
           🕐
+        </button>
+
+        {/* Pin button */}
+        <button
+          onClick={onTogglePin}
+          onPointerDown={(e) => e.stopPropagation()}
+          className={`${pinned ? '' : 'opacity-0 group-hover:opacity-100'} text-xs transition-opacity flex-shrink-0 mt-0.5`}
+          style={{ cursor: 'pointer', fontSize: '12px', opacity: pinned ? 1 : undefined }}
+          title={pinned ? 'Unpin' : 'Pin to top'}
+        >
+          📌
         </button>
 
         {/* Delete */}

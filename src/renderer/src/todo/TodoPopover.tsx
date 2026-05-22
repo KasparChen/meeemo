@@ -173,25 +173,32 @@ function SortableTodoItem({
   text,
   done,
   reminder,
+  pinned,
   onToggle,
   onDelete,
   onSetReminder,
-  onRename
+  onRename,
+  onTogglePin
 }: {
   id: string
   text: string
   done: boolean
   reminder?: string
+  pinned?: boolean
   onToggle: () => void
   onDelete: () => void
   onSetReminder: (reminder: string | undefined) => void
   onRename: (text: string) => void
+  onTogglePin: () => void
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition
+    transition: isDragging ? 'none' : transition,
+    opacity: isDragging ? 0.6 : 1,
+    zIndex: isDragging ? 10 : undefined,
+    position: 'relative'
   }
 
   return (
@@ -200,14 +207,23 @@ function SortableTodoItem({
         text={text}
         done={done}
         reminder={reminder}
+        pinned={pinned}
         onToggle={onToggle}
         onDelete={onDelete}
         onSetReminder={onSetReminder}
         onRename={onRename}
+        onTogglePin={onTogglePin}
         dragHandleProps={listeners}
       />
     </div>
   )
+}
+
+function reorderTasks(tasks: TodoTask[]): TodoTask[] {
+  const pinned = tasks.filter((t) => t.pinned)
+  const activeUnpinned = tasks.filter((t) => !t.pinned && !t.done)
+  const doneUnpinned = tasks.filter((t) => !t.pinned && t.done)
+  return [...pinned, ...activeUnpinned, ...doneUnpinned]
 }
 
 export function TodoPopover() {
@@ -311,9 +327,10 @@ export function TodoPopover() {
 
   const activeList = lists.find((l) => l.filename === activeFilename)
   const tasks = activeList?.tasks || []
-  const uncompleted = tasks.filter((t) => !t.done)
-  const completed = tasks.filter((t) => t.done)
-  const displayTasks = showCompleted ? [...uncompleted, ...completed] : uncompleted
+  const orderedTasks = reorderTasks(tasks)
+  const displayTasks = showCompleted ? orderedTasks : orderedTasks.filter((t) => !t.done)
+  const hiddenCount = orderedTasks.length - displayTasks.length
+  const taskId = (t: TodoTask): string => `task::${t.text}::${t.done ? 'd' : 'a'}::${t.pinned ? 'p' : 'u'}`
 
   const now = Date.now()
   const overdueTasks = tasks.filter((t) => {
@@ -334,7 +351,8 @@ export function TodoPopover() {
   const saveTasks = useCallback(
     async (newTasks: TodoTask[]) => {
       if (!activeFilename) return
-      await api.todoWrite(activeFilename, newTasks)
+      const sorted = reorderTasks(newTasks)
+      await api.todoWrite(activeFilename, sorted)
       ;(window as any).__electron_ipc_send?.('update-tray-badge')
       loadLists()
     },
@@ -362,9 +380,7 @@ export function TodoPopover() {
     const realIndex = allTasks.findIndex((t) => t.text === task.text && t.done === task.done)
     if (realIndex >= 0) {
       allTasks[realIndex] = { ...allTasks[realIndex], done: !allTasks[realIndex].done }
-      const unc = allTasks.filter((t) => !t.done)
-      const comp = allTasks.filter((t) => t.done)
-      saveTasks([...unc, ...comp])
+      saveTasks(allTasks)
     }
   }
 
@@ -397,12 +413,20 @@ export function TodoPopover() {
     }
   }
 
+  const handleTogglePin = (index: number) => {
+    const allTasks = [...tasks]
+    const task = displayTasks[index]
+    const realIndex = allTasks.findIndex((t) => t.text === task.text && t.done === task.done)
+    if (realIndex >= 0) {
+      allTasks[realIndex] = { ...allTasks[realIndex], pinned: !allTasks[realIndex].pinned }
+      saveTasks(allTasks)
+    }
+  }
+
   const handleAddTask = () => {
     if (!newTaskText.trim()) return
     const newTask: TodoTask = { text: newTaskText.trim(), done: false }
-    const unc = tasks.filter((t) => !t.done)
-    const comp = tasks.filter((t) => t.done)
-    saveTasks([...unc, newTask, ...comp])
+    saveTasks([...tasks, newTask])
     setNewTaskText('')
   }
 
@@ -462,8 +486,8 @@ export function TodoPopover() {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
-    const oldIndex = displayTasks.findIndex((_, i) => `task-${i}` === active.id)
-    const newIndex = displayTasks.findIndex((_, i) => `task-${i}` === over.id)
+    const oldIndex = displayTasks.findIndex((t) => taskId(t) === active.id)
+    const newIndex = displayTasks.findIndex((t) => taskId(t) === over.id)
 
     if (oldIndex < 0 || newIndex < 0) return
 
@@ -471,11 +495,14 @@ export function TodoPopover() {
     const [removed] = reordered.splice(oldIndex, 1)
     reordered.splice(newIndex, 0, removed)
 
-    if (!showCompleted) {
-      saveTasks([...reordered, ...completed])
-    } else {
-      saveTasks(reordered)
-    }
+    const hidden = showCompleted ? [] : tasks.filter((t) => t.done && !t.pinned)
+    const sorted = reorderTasks([...reordered, ...hidden])
+    // Optimistic update so the drop animation lands on the final layout
+    // instead of bouncing back while saveTasks roundtrips through disk.
+    setLists((prev) =>
+      prev.map((l) => (l.filename === activeFilename ? { ...l, tasks: sorted } : l))
+    )
+    saveTasks(sorted)
   }
 
   return (
@@ -680,31 +707,33 @@ export function TodoPopover() {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={displayTasks.map((_, i) => `task-${i}`)}
+            items={displayTasks.map((t) => taskId(t))}
             strategy={verticalListSortingStrategy}
           >
             {displayTasks.map((task, i) => (
               <SortableTodoItem
-                key={`task-${i}`}
-                id={`task-${i}`}
+                key={taskId(task)}
+                id={taskId(task)}
                 text={task.text}
                 done={task.done}
                 reminder={task.reminder}
+                pinned={task.pinned}
                 onToggle={() => handleToggle(i)}
                 onDelete={() => handleDelete(i)}
                 onSetReminder={(r) => handleSetReminder(i, r)}
                 onRename={(t) => handleRename(i, t)}
+                onTogglePin={() => handleTogglePin(i)}
               />
             ))}
           </SortableContext>
         </DndContext>
 
-        {!showCompleted && completed.length > 0 && (
+        {!showCompleted && hiddenCount > 0 && (
           <div
             className="text-center text-xs py-2"
             style={{ color: 'var(--text-secondary)' }}
           >
-            {completed.length} completed task{completed.length > 1 ? 's' : ''} hidden
+            {hiddenCount} completed task{hiddenCount > 1 ? 's' : ''} hidden
           </div>
         )}
 
