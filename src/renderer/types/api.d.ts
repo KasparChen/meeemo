@@ -47,8 +47,8 @@ interface MeeemoAPI {
   appVersion(): Promise<string>
   openUrl(url: string): Promise<void>
   openStorage(): Promise<void>
-  changeStorage(): Promise<string | null>
-  resetStorage(): Promise<string>
+  changeStorage(): Promise<AppConfig | null>
+  resetStorage(): Promise<AppConfig>
   migrateStorage(sourcePath: string, keepSource: boolean): Promise<{ copied: number; renamed: number; removedSource: boolean }>
   openSettings(section?: string): Promise<void>
   windowClose(): Promise<void>

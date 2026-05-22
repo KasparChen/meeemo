@@ -157,10 +157,14 @@ export function SettingsPage() {
   const updateImageHost = (partial: Record<string, unknown>) =>
     api.configSet({ imageHost: partial } as any)
 
-  const refreshStorageConfig = async () => {
-    const cfg = await api.configGet()
+  const applyStorageConfig = (cfg: AppConfig) => {
     setStoragePath(cfg.storagePath || '')
     setStoragePathHistory(cfg.storagePathHistory || [])
+  }
+
+  const refreshStorageConfig = async () => {
+    const cfg = await api.configGet()
+    applyStorageConfig(cfg)
   }
 
   const runMigration = async () => {
@@ -187,6 +191,13 @@ export function SettingsPage() {
       else setUpdateStatus('latest')
     } catch { setUpdateStatus('latest') }
   }
+
+  useEffect(() => {
+    const cleanup = api.onConfigChanged(() => {
+      refreshStorageConfig()
+    })
+    return () => { cleanup?.() }
+  }, [api])
 
   return (
     <div className="settings-shell">
@@ -319,8 +330,8 @@ export function SettingsPage() {
                     <button
                       className="settings-button"
                       onClick={async () => {
-                        const newPath = await api.changeStorage()
-                        if (newPath) await refreshStorageConfig()
+                        const updated = await api.changeStorage()
+                        if (updated) applyStorageConfig(updated)
                       }}
                     >
                       Change...
@@ -338,8 +349,8 @@ export function SettingsPage() {
               <button
                 className="settings-button"
                 onClick={async () => {
-                  await api.resetStorage()
-                  await refreshStorageConfig()
+                  const updated = await api.resetStorage()
+                  applyStorageConfig(updated)
                 }}
               >
                 Reset Default

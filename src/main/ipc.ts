@@ -174,12 +174,12 @@ export function registerIpcHandlers(): void {
     const newPath = result.filePaths[0]
     const updated = updateConfig({ storagePath: newPath })
     broadcastToAll('config-changed')
-    return updated.storagePath
+    return updated
   })
   ipcMain.handle('app:reset-storage', () => {
     const updated = resetStoragePath()
     broadcastToAll('config-changed')
-    return updated.storagePath
+    return updated
   })
   ipcMain.handle('app:migrate-storage', (_e, sourcePath: string, keepSource: boolean) => {
     const config = loadConfig()
