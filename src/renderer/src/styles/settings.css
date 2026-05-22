@@ -308,13 +308,21 @@ html[data-window="settings"] #root {
   margin: 8px 0 12px;
 }
 
+.settings-modal-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin: 14px 0 6px;
+}
+
 .settings-path-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
   max-height: 150px;
   overflow-y: auto;
-  margin: 12px 0;
+  margin: 0 0 12px;
 }
 
 .settings-empty-note {
@@ -328,6 +336,10 @@ html[data-window="settings"] #root {
 }
 
 .settings-path-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   text-align: left;
   border: 1px solid var(--settings-divider);
   background: var(--settings-card);
@@ -337,18 +349,40 @@ html[data-window="settings"] #root {
   font-size: 11px;
   font-family: -apple-system-monospaced, ui-monospaced, monospace;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   cursor: pointer;
 }
 
-.settings-path-item:hover {
+.settings-path-item > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-path-item:hover:not(:disabled) {
   background: var(--settings-nav-hover);
 }
 
 .settings-path-item-active {
   border-color: var(--accent);
   background: var(--settings-nav-active);
+}
+
+.settings-path-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--text-secondary);
+}
+
+.settings-path-item-tag {
+  font-family: -apple-system, system-ui, sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--settings-divider);
+  color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
 .settings-checkbox-row {

@@ -367,7 +367,8 @@ export function SettingsPage() {
               <button
                 className="settings-button"
                 onClick={() => {
-                  setMigrationSource(storagePathHistory[0] || '')
+                  const firstSelectable = storagePathHistory.find((p) => p !== storagePath) || ''
+                  setMigrationSource(firstSelectable)
                   setMigrationStatus('')
                   setKeepMigrationSource(true)
                   setConfirmDeleteSource(false)
@@ -623,20 +624,26 @@ export function SettingsPage() {
             <div className="settings-modal-title">Migrate Storage</div>
             <div className="settings-modal-copy">Copy files from a previous storage location into the current one.</div>
             <div className="settings-storage-path" title={storagePath}>Current: {storagePath}</div>
+            <div className="settings-modal-label">History</div>
             <div className="settings-path-list">
-              {storagePathHistory.length === 0 ? (
+              {storagePathHistory.filter((p) => p !== storagePath).length === 0 ? (
                 <div className="settings-empty-note">No previous storage locations yet. Change location once, then this list will show the folder you moved away from.</div>
               ) : (
-                storagePathHistory.map((path) => (
-                  <button
-                    key={path}
-                    className={`settings-path-item ${migrationSource === path ? 'settings-path-item-active' : ''}`}
-                    onClick={() => setMigrationSource(path)}
-                    title={path}
-                  >
-                    {path}
-                  </button>
-                ))
+                storagePathHistory.map((path) => {
+                  const isCurrent = path === storagePath
+                  return (
+                    <button
+                      key={path}
+                      className={`settings-path-item ${migrationSource === path ? 'settings-path-item-active' : ''}`}
+                      onClick={() => { if (!isCurrent) setMigrationSource(path) }}
+                      disabled={isCurrent}
+                      title={isCurrent ? `${path} (current)` : path}
+                    >
+                      <span>{path}</span>
+                      {isCurrent && <span className="settings-path-item-tag">current</span>}
+                    </button>
+                  )
+                })
               )}
             </div>
             <label className="settings-checkbox-row">

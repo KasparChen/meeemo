@@ -78,14 +78,20 @@ function normalizeStoragePathHistory(paths: string[], currentPath: string): stri
   const seen = new Set<string>()
   const result: string[] = []
 
-  for (const path of paths) {
-    if (!path) continue
+  const append = (path: string): void => {
+    if (!path) return
     const normalized = normalizeStoragePath(path)
-    if (normalized === current || seen.has(normalized)) continue
+    if (seen.has(normalized)) return
     seen.add(normalized)
     result.push(normalized)
-    if (result.length >= 5) break
   }
+
+  for (const path of paths) {
+    if (result.length >= 5 && !seen.has(current)) break
+    if (result.length >= 6) break
+    append(path)
+  }
+  append(current)
 
   return result
 }
